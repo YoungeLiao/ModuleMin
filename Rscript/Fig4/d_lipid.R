@@ -6,12 +6,11 @@ library(ggplot2)
 library(ggpubr)
 
 # load data
-path <- './data/Fig4/d_Lipid_Energy_Protein_NC.xlsx' # CN_Conversion.xlsx # NH4CO3-MF.xlsx # Optogenetics.xlsx # './data/Hydraulic.xlsx' # './data/MultiSludge.xlsx' # './data/Optogenetics.xlsx' # './data/Sum-Batch.xlsx'
-sheet.name <- 'Sheet1' # MF-1020 #'MD&C'  # 'MAB_MDC' # 'Bottle_5Microbes' # Bottle_MAB12-0505-0525 #'Bottle'# 'Bottle_MAB12' # 'MAB'
+path <- './data/Fig4/d_Lipid_Energy_Protein_NC.xlsx' 
+sheet.name <- 'Sheet1' 
 rawdata <- data.frame(read_excel(path, sheet = sheet.name))
 data <- rawdata
 # data <- subset(rawdata, rawdata$Batch == 'Opto5')
-
 
 # Calculate statistics by group
 library(dplyr)
@@ -24,19 +23,6 @@ group_stats <- data %>%
     IQR = IQR(Intensity, na.rm = TRUE)
   )
 print(group_stats)
-
-# group_stats <- data %>%
-#   group_by(Group) %>%
-#   summarise(
-#     mean = mean(Em598, na.rm = TRUE),
-#     sd = sd(Em598, na.rm = TRUE),
-#     median = median(Em598, na.rm = TRUE),
-#     IQR = IQR(Em598, na.rm = TRUE)
-#   )
-# print(group_stats)
-
-# # Remove non-finite values
-# data <- data[is.finite(data$Intensity), ]
 
 # # Define pairwise comparisons
 comparisons <- list(c("DarkML", "IRML"))

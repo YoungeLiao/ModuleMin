@@ -7,7 +7,6 @@ library(ggplot2)
 library(ggbeeswarm)
 library(ggpubr)
 
-
 # load data
 path.anno <- './data/rawdata.shared/anno_overview.txt'
 anno <- read.delim(path.anno, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
@@ -31,7 +30,6 @@ abun_sub <- abundance %>%
   select(GeneID, IR1, IR2, IR3, Dark1, Dark2, Dark3, Initial)
 head(abun_sub)
 df <- merge(anno_sub, abun_sub)
-# merged_df <- dplyr::left_join(abun_sub, anno_sub, by = "GeneID")
 head(df)
 # GeneID                        Phylum                                         Genus
 # 1      C1_Dark_k97_1_1                             -                                             -
@@ -48,25 +46,20 @@ head(df)
 # 5 3.417034e-07 2.558175e-06 2.247707e-06 2.266508e-06 1.383229e-06 1.136492e-06 8.388045e-08
 # 6 1.067823e-06 1.218178e-07 1.104805e-06 0.000000e+00 4.742499e-07 3.523125e-06 0.000000e+00
 
-# 确保丰度列为数值
 ab_cols <- c("IR1","IR2","IR3","Dark1","Dark2","Dark3","Initial")
 df[ab_cols] <- lapply(df[ab_cols], function(x) as.numeric(as.character(x)))
 
-# 将缺失或 "-" 的属名统一为 "Unclassified"（可选）
 df$Genus[is.na(df$Genus) | df$Genus == ""] <- "Unclassified"
 df$Genus[df$Genus == "-"] <- "Unclassified"
 
-# 按属求和得到属水平的相对丰度
 library(dplyr)
 genus_abundance <- df %>%
   group_by(Genus) %>%
   summarise(across(all_of(ab_cols), ~ sum(.x, na.rm = TRUE))) %>%
   ungroup()
 
-# 保存结果
 out_dir <- "./data/Fig2/processed_Metagenomic_abundance"
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 readr::write_tsv(genus_abundance, file.path(out_dir, "genus_abundance.tsv"))
 
-# 快览
 print(head(genus_abundance, 5))

@@ -1,4 +1,4 @@
-rm(list=ls())
+srm(list=ls())
 
 # load library
 library(readxl)
@@ -42,7 +42,7 @@ head(rawdata.edge)
 # 5 o__Peptostreptococcales-Tissierellales                f__Caminicellaceae    g__Wukongibacter          s__uncultured_bacterium_g__Wukongibacter
 # 6                    o__Flavobacteriales                 f__Cryomorphaceae         g__Vicingus s__uncultured_Bacteroidetes_bacterium_g__Vicingus
 
-# 为source节点添加注释
+# add annotations for source nodes
 rawdata.edge <- rawdata.edge %>%
   left_join(rawdata.taxon %>% 
               select(ASV_ID, Genus, Species) %>%
@@ -50,7 +50,7 @@ rawdata.edge <- rawdata.edge %>%
                      Source_species = Species),
             by = c("source" = "ASV_ID"))
 
-# 为target节点添加注释
+# add annotations for target nodes
 rawdata.edge <- rawdata.edge %>%
   left_join(rawdata.taxon %>%
               select(ASV_ID, Genus, Species) %>%
@@ -74,20 +74,17 @@ head(rawdata.edge)
 # 5 g__unclassified_k__norank_d__Bacteria             s__unclassified_k__norank_d__Bacteria
 # 6                       g__Peredibacter   s__uncultured_Bacteriovorax_sp._g__Peredibacter
 
-# 定义要保留的genus列表
+# Define interested genus list 
 target_genera <- c('g__Aliidiomarina', 'g__Vicingus', 'g__Halomonas', 'g__Kangiella')
 
-# 过滤数据
+# filtering
 rawdata.edge.filtered <- rawdata.edge %>%
   filter(Source_genus %in% target_genera)
 
-# 查看过滤后的结果
 head(rawdata.edge.filtered)
 
-# 定义输出文件路径
 output.path <- './data/Fig3/c_network_edge_filtered.output.xlsx'
 
-# 将过滤后的数据写入Excel文件
 library(writexl)
 write_xlsx(rawdata.edge.filtered, 
            path = output.path)

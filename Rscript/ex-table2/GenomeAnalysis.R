@@ -52,14 +52,12 @@ head(anno.kegg)
 # 6 Lysine biosynthesis;Monobactam biosynthesis;Metabolic pathways;Biosynthesis of amino acids;Microbial metabolism in diverse environments;Biosynthesis of secondary metabolites
 
 # ---- KO filtering ----
-# 筛选特定的KO号
 target_KOs <- c('K00174', 'K00175', 'K03737', 'K01647', 'K01648') # 'K00176'
 # ACL <- c('K01676', 'K01677', 'K01679', 'K01681')
 # target_KOs <- ACL
 filtered.anno.kegg <- anno.kegg %>%
   filter(KO %in% target_KOs)
 
-# 查看筛选结果
 head(filtered.anno.kegg)
 
 
@@ -107,7 +105,6 @@ MAG57.keggname.top5 <- MAG57.keggname %>%
   arrange(desc(Freq)) %>%
   slice_head(n = 5)
 
-# 查看结果
 print("MAG90 top 5 KEGG names:")
 print(MAG90.keggname.top5)
 # Var1 Freq
@@ -126,27 +123,18 @@ print(MAG57.keggname.top5)
 # 4 rsbU_P    7
 # 5    pal    5
 
-
-# 获取top5的基因名称（排除'-'）
 MAG90.top5.genes <- MAG90.keggname.top5$Var1[MAG90.keggname.top5$Var1 != '-']
 MAG57.top5.genes <- MAG57.keggname.top5$Var1[MAG57.keggname.top5$Var1 != '-']
 
-# 根据top5基因名称过滤原基因组数据
 MAG90.abundant <- MAG90[MAG90$KEGG_name %in% MAG90.top5.genes, ]
 MAG57.abundant <- MAG57[MAG57$KEGG_name %in% MAG57.top5.genes, ]
 
-# 查看结果
 print("MAG90 abundant genes:")
 print(head(MAG90.abundant))
 print("MAG57 abundant genes:")
 print(head(MAG57.abundant))
 
-
-
-# 定义输出文件路径
 output.path <- './data/ex-table2/TargetedGenome.output.xlsx'
-
-# 将过滤后的数据写入Excel文件
 library(writexl)
 write_xlsx(Filtered.anno.kegg.genome, 
            path = output.path)

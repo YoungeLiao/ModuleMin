@@ -1,5 +1,4 @@
 rm(list=ls())
-# source('./Rscript/functions.R')
 
 library(readxl)
 library(ggplot2)
@@ -17,7 +16,7 @@ rawdata <- data.frame(read_excel(path, sheet = sheet.name))
 target_cols <- c('Genus','Dark1', 'Dark2', 'Dark3', 'IR1', 'IR2', 'IR3', 'Initial')
 rawdata <- rawdata[,target_cols]
 
-# 1. 质控：去除丰度极低的ASV（如相对丰度<0.01% - 万分之一）
+# 1. quality control
 abundance_cols <- which(
   !(colnames(rawdata) %in% c(
     "Genus"
@@ -27,18 +26,18 @@ rawdata$mean_abundance <- rowMeans(rawdata[, abundance_cols], na.rm = TRUE)
 rawdata_qc <- rawdata %>% filter(mean_abundance > 0.0001) 
 core_mags <- rawdata_qc
 
-# 2. 计算距离矩阵 (Bray-Curtis)
+# 2. distance matrix (Bray-Curtis)
 set.seed(0)
 core_mags_numeric <- core_mags[, abundance_cols]
 core_mags_numeric <- as.data.frame(sapply(core_mags_numeric, as.numeric))
 dist_matrix <- vegdist(core_mags_numeric, method = "bray")
 
-# 3. 主坐标分析 (PCoA)
+# 3. PCoA
 set.seed(0)
 pcoa <- cmdscale(dist_matrix, k = 3, eig = TRUE)
 scores <- pcoa$points  # 降维坐标
 
-# 4. UMAP进一步降维 (基于PCoA结果)
+# 4. UMAP
 library(umap)
 set.seed(0)
 
@@ -48,7 +47,7 @@ umap_out <- umap(scores, n_components=n_comp, n_neighbors = n_nei)
 # umap_out <- umap(as.matrix(dist_matrix), n_components=8)
 umap_coords <- umap_out$layout
 
-# # 5. 聚类 (HDBSCAN处理密度不均)
+# # 5. Clustering
 # library(dbscan)
 # set.seed(0)
 # clusters <- hdbscan(umap_coords, minPts=25)$cluster
@@ -80,7 +79,7 @@ kmeans_result <- kmeans(df.reduced[, c('umap1', 'umap2')], centers = optimal_clu
 df.reduced$Cluster <- as.factor(kmeans_result$cluster)  # Add cluster information to the dataframe
 
 
-# 6. 可视化
+# 6. Visualization
 df <- data.frame(
   UMAP1 = umap_coords[, 1],
   UMAP2 = umap_coords[, 2],
@@ -102,7 +101,7 @@ colnames(umap_df) <- c('UMAP1', 'UMAP2', 'Cluster', 'Genus')
 path.anno <- "./data/rawdata.shared/gene_nr_anno.txt"
 anno <- read.delim(path.anno, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
 
-# 只保留 Genus 和 Phylum，并去重以避免合并后行数膨胀
+# Keep column Genus and Phylum
 anno_phylum <- anno %>%
   dplyr::select(Genus, Phylum) %>%
   dplyr::distinct(Genus, .keep_all = TRUE)
@@ -111,7 +110,6 @@ path.label <- './data/rawdata.shared/b_Relative_abubdance.xlsx'
 sheet.name.label <- 'label'
 label.raw <- data.frame(read_excel(path.label, sheet = sheet.name.label))
 
-# 使用 left_join 保持 label.raw 的所有行（约 4000+），并补充匹配到的 Phylum 信息
 label <- dplyr::left_join(label.raw, anno_phylum, by = "Genus")
 
 umap_df <- merge(umap_df, label, by = 'Genus')

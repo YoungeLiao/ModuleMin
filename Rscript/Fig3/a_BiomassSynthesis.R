@@ -33,7 +33,7 @@ print(group_stats)
 comparisons <- list(c("Dark", "IR"))
 result <- compare_means(BiomassSynthesisRate ~ Group, data = data, method = "t.test")  
 
-Cust_palette <- c('#818181', '#E57272', '#B387FE', '#FED565') 
+Cust_palette <- c('#989CC8', '#E59693', '#B387FE', '#FED565') 
 # Create the boxplot with scatter points and significance comparison
 ggplot(rawdata, aes(x = Group, y = BiomassSynthesisRate, fill = Group)) +
   geom_boxplot(outlier.shape = NA,

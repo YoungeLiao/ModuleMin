@@ -6,7 +6,7 @@ library(ggplot2)
 library(ggpubr)
 library(dplyr)
 library(tidyr)
-library(cowplot)  # 用于组合主图和局部放大图
+library(cowplot) 
 
 # load data
 path <- './data/ex.fig1b.co2.gc.xlsx'
@@ -27,15 +27,14 @@ head(rawdata)
 # 5      I2    0   IR-Gas Opto6   484.8 0.05737490 0.1417160  779.77372 23393.212
 # 6      I3    0   IR-Gas Opto6   486.8 0.05763723 0.1423640  875.78348 26273.504
 
-# 数据预处理：将 C_m 和 TIC_m 转换为长格式，并计算均值
+
 plotdata <- rawdata.1 %>%
-    select(Group, C_m, TIC_m) %>%  # 选择需要的列
+    select(Group, C_m, TIC_m) %>% 
     pivot_longer(cols = c(C_m, TIC_m), names_to = "Phase", values_to = "Carbon_Mass") %>%  # 转换为长格式
-    group_by(Group, Phase) %>%  # 按 Group 和 Phase 分组
+    group_by(Group, Phase) %>% 
     summarise(Carbon_Mass = mean(Carbon_Mass, na.rm = TRUE))  # 计算均值
 
-# 主图：完整的堆叠柱状图
-# 主图：完整的边框型柱状图，柱子填充为空白透明并添加数据点
+
 y.limit <- c(0, 36000)
 y.BREAK <- 10000
 main_plot <- ggplot(plotdata, aes(x = Group, y = Carbon_Mass, fill = Phase)) +
@@ -66,7 +65,7 @@ main_plot <- ggplot(plotdata, aes(x = Group, y = Carbon_Mass, fill = Phase)) +
     )
 main_plot
 
-# Create the bar plot with scatter points and error bars
+
 zoom_plot <- ggplot(rawdata.2 %>% filter(Phase == "Gas"), aes(x = Group, y = C_ppm*10000)) + # fill = Group
     stat_summary(fun = mean, geom = "bar", position = "dodge", width = 0.7, color = '#E57272', fill = "transparent") +  # Bar plot showing mean values
     stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, position = position_dodge(0.7)) +  # Error bars showing standard error

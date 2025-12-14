@@ -5,18 +5,18 @@ library(RColorBrewer)
 library(dplyr)
 library(scales)
 
-# ========== 1. 设置分类学层级选项 ==========
-# 可选："Genus" 或 "Phylum"
-tax_level <- "Genus" # 修改为 "Phylum" 可切换分析层级
+# ========== 1. setting phylogenetic level ==========
+# Selection："Genus" or "Phylum"
+tax_level <- "Genus" 
 
-# 1. 读取数据
+# 1. load data
 path.AnnotatedIR <- './data/results_data/Annotated_IROptogenetics.xlsx'
 raw.AnnotatedIR <- data.frame(read_excel(path.AnnotatedIR))
 
-# 2. 需要统计的丰度列
+# 2. tarted samples
 abundance_cols <- c("Total", "IR1", "IR2", "IR3", "Dark1", "Dark2", "Dark3")
 
-# 3. 统计
+# 3. statistic
 summary.counts <- as.data.frame(table(raw.AnnotatedIR[[tax_level]]))
 colnames(summary.counts) <- c(tax_level, 'Gene_counts')
 path.save.counts <- './data/ex-fig4/IROptogenetics_Genus_Counts.xlsx'
@@ -29,12 +29,12 @@ summary.abundance <- aggregate(raw.AnnotatedIR[, abundance_cols],
 summary.df <- merge(summary.counts, summary.abundance, by = tax_level)
 summary.df$GeneCounts_normed <- summary.df$Gene_counts / summary.df$Total
 
-# 4. 仅可视化gene counts为top20的
+# 4. Select top20 for visualization
 summary.df <- summary.df[order(summary.df$Gene_counts, decreasing = TRUE), ]
 summary.df <- summary.df[1:min(20, nrow(summary.df)), ]
 summary.df[[tax_level]] <- factor(summary.df[[tax_level]], levels = summary.df[[tax_level]])
 
-# 5. CNS正刊风格气泡图美化（可自定义美化颜色）
+# 5. custom colors
 custom_colors <- colorRampPalette(c("#344893", "#fee090",'#FF4066', "#D53555", '#AA2B44'))(100)
 
 p <- ggplot(summary.df, aes(x = Gene_counts, 
@@ -73,21 +73,17 @@ p <- ggplot(summary.df, aes(x = Gene_counts,
   coord_cartesian(clip = "off")
 p
 
-# 6. 输出气泡图
+# 6. output bubbleplot
 ggsave(filename = paste0("Fig2b_IRswitch_Bubbleplot_", tax_level, ".pdf"), plot = p, width = 8, height = 8, limitsize = FALSE)
 
-# 7. 绘制所选分类学层级gene counts占比的饼图
-
-# 先统计所选层级的gene counts总和（用全数据，不只是summary.df的top20）
+# 7. pie plot
 pie_df_all <- raw.AnnotatedIR %>%
   group_by(!!as.name(tax_level)) %>%
   summarise(Gene_counts = n()) %>%
   arrange(desc(Gene_counts))
 
-# 计算占比
 pie_df_all$Fraction <- pie_df_all$Gene_counts / sum(pie_df_all$Gene_counts)
 
-# 只保留前20，其他合并为Other
 top_n <- 20
 if (nrow(pie_df_all) > top_n) {
   pie_df_top <- pie_df_all[1:top_n, ]
@@ -109,28 +105,23 @@ if (nrow(pie_df_all) > top_n) {
   pie_df <- pie_df[, c("label", "Gene_counts", "Fraction")]
 }
 
-# 按照占比从高到低排序
 pie_df <- pie_df %>% arrange(desc(Fraction))
 
-# 生成带百分比的图例标签
 pie_df$Label <- paste0(pie_df$label, " (", percent(pie_df$Fraction, accuracy = 0.1), ")")
 
-# 根据tax_level选择渐变色盘
 if (tax_level == "Phylum") {
-  # Phylum层面用蓝-绿-黄渐变
+  # Phylum
   pie_colors <- rev(colorRampPalette(c("#1b9e77", "#a6d854", "#673AB7"))(nrow(pie_df)))
 } else if (tax_level == "Genus") {
-  # Genus层面用原有蓝-黄-红渐变
+  # Genus
   pie_colors <- rev(colorRampPalette(c("#344893", "#fee090", "#D53555"))(nrow(pie_df)))
 } else {
-  # 其他层级用灰-紫-粉渐变
+  # Other
   pie_colors <- rev(colorRampPalette(c("#bdbdbd", "#8073ac", "#f1b6da"))(nrow(pie_df)))
 }
 
-# 设置Label为有序因子，确保图例和饼图顺序一致（从高到低）
 pie_df$Label <- factor(pie_df$Label, levels = pie_df$Label)
 
-# 绘制饼图，图例用Label
 pie_plot <- ggplot(pie_df, aes(x = "", y = Gene_counts, fill = Label)) +
   geom_bar(stat = "identity", width = 1, color = "white") +
   coord_polar(theta = "y") +
@@ -146,5 +137,4 @@ pie_plot <- ggplot(pie_df, aes(x = "", y = Gene_counts, fill = Label)) +
 
 pie_plot
 
-# 输出饼图
 ggsave(filename = paste0("Fig2b_IRswitch_", tax_level, "_Pieplot.pdf"), plot = pie_plot, width = 14.5, height = 7)

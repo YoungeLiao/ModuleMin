@@ -28,7 +28,7 @@ growth$Growth <- as.numeric(as.character(growth$Growth))
 growth$Group <- factor(growth$Group, levels = c("IR", "Dark"))
 
 # CNS-like colors
-main_colors <- c("IR" = "#E57272", "Dark" = "#818181")
+main_colors <- c("IR" = '#E59693', "Dark" = '#989CC8')
 
 library(dplyr)
 library(ggplot2)
@@ -105,17 +105,6 @@ growth <- growth %>%
   ) %>%
   ungroup() %>%
   select(-.mean_genus, -.sd_genus)
-
-# (可选) 若希望使用更健壮的标准化，替代 z-score 可用 median/MAD：
-# growth <- growth %>%
-#   group_by(Genus) %>%
-#   mutate(
-#     Growth_med = median(Growth, na.rm = TRUE),
-#     Growth_mad = mad(Growth, na.rm = TRUE),
-#     Growth_z = ifelse(Growth_mad > 0, (Growth - Growth_med) / Growth_mad, NA_real_)
-#   ) %>%
-#   ungroup() %>%
-#   select(-Growth_med, -Growth_mad)
 
 summary_z <- growth %>%
   group_by(Genus, Group) %>%

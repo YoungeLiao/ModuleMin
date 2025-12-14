@@ -1,5 +1,5 @@
 rm(list=ls())
-# 加载必要包
+
 library(readxl)
 library(dplyr)
 library(vegan)
@@ -10,7 +10,7 @@ library(ggplot2)
 library(RColorBrewer)
 library(Rtsne)
 
-# 1. 读取数据
+# 1. load data
 path.metageno.kegglevel3 <- "./data/ex-fig7/kegg_level3_profile.xlsx"
 rawdata.metageno <- data.frame(read_excel(path.metageno.kegglevel3))
 head(rawdata.metageno)
@@ -37,44 +37,37 @@ head(data.metageno)
 # 5  1568272  1657642  1929848  1744198  1632056  1882302  1543600
 # 6  1501020  1611196  1824202  1639728  1539104  1745284  1772194
 
-# 2. 构建丰度矩阵
+# 2. abundance matrix
 abun_mat <- as.matrix(data.metageno[, c(raw.metadata$Sample,'Initial')])
 rownames(abun_mat) <- data.metageno$Level3
 
-# 计算分组平均丰度
-# 假设metadata有一列Group，内容为"Dark"或"IR"
-# 如果没有Group列，请先在metadata中添加
 if(!"Group" %in% colnames(raw.metadata)) {
-  stop("metadata中缺少Group列，请添加分组信息（如'Dark'/'IR'）")
+  stop("lack of Group in metadata，please add the group information")
 }
 dark_samples <- raw.metadata$Sample[raw.metadata$Group == "Dark"]
 ir_samples <- raw.metadata$Sample[raw.metadata$Group == "IR"]
 
-# 计算平均值
 mean_dark <- rowMeans(abun_mat[, dark_samples, drop=FALSE], na.rm = TRUE)
 mean_ir <- rowMeans(abun_mat[, ir_samples, drop=FALSE], na.rm = TRUE)
 mean_all <- rowMeans(abun_mat, na.rm = TRUE)
 
-# 数据预处理：过滤低丰度pathway
-# 计算每个pathway的平均丰度，过滤掉丰度较低的
-abundance_threshold <- quantile(mean_all, 0.01)  # 保留前99%的pathway，可调整
+abundance_threshold <- quantile(mean_all, 0.01)  
 keep_pathways <- mean_all >= abundance_threshold
 abun_mat_filtered <- abun_mat[keep_pathways, ]
 
-cat("原始pathway数量:", nrow(abun_mat), "\n")
-cat("过滤后pathway数量:", nrow(abun_mat_filtered), "\n")
-cat("丰度阈值:", abundance_threshold, "\n")
+cat("original all pathway number:", nrow(abun_mat), "\n")
+cat("Filtered pathway number:", nrow(abun_mat_filtered), "\n")
+cat("Abundance Threshold:", abundance_threshold, "\n")
 
 
-# ==== 1. 先对All分组做降维和聚类，获得Cluster标签 ====
-# 可选："All"（全部样品，包括Initial）、"Dark"、"IR"
-sample_group_for_umap <- "All"  # 修改为 "Dark" 或 "IR" 可只用对应分组
+# ==== 1. Dimension reduction and Clustering ====
+# Selection："All"（all samples）、"Dark"、"IR"
+sample_group_for_umap <- "All"  
 
-# 先对All分组做降维和聚类，获得Cluster标签
 selected_samples_all <- colnames(abun_mat_filtered)
 abun_mat_log_all <- log2(abun_mat_filtered[, selected_samples_all, drop = FALSE] + 1)
 
-dim_reduction_method <- "UMAP"  # 可选: "UMAP" 或 "TSNE"
+dim_reduction_method <- "UMAP"  # Selection: "UMAP" or "TSNE"
 if(dim_reduction_method == "UMAP") {
   library(umap)
   set.seed(0)
@@ -103,7 +96,7 @@ if(dim_reduction_method == "UMAP") {
   stop("dim_reduction_method must be either 'UMAP' or 'TSNE'")
 }
 
-# 聚类（只对All分组做）
+# Clustering
 df.reduced_all <- data.frame(coords_all)
 colnames(df.reduced_all) <- c('UMAP1', 'UMAP2')
 umap_dist_all <- dist(df.reduced_all)
@@ -114,7 +107,6 @@ kmeans_result_all <- kmeans(df.reduced_all, centers = optimal_clusters_all)
 df.reduced_all$Cluster <- as.factor(kmeans_result_all$cluster)
 
 # ========= 基于Cluster label 调整UMAP最佳参数 START（只对All分组） =========
-## --- 已调整好后的
 best_params <- data.frame(n_neighbors = 30)
 best_params$min_dist <- 11
 best_params$spread <- 16.5
@@ -198,35 +190,34 @@ if (sample_group_for_umap == "All") {
   stop("sample_group_for_umap 只能为 'All', 'Dark', 'IR'")
 }
 
-# ========= 7. 合并标签
+# ========= 7. Merge labels
 filtered_indices <- which(rownames(abun_mat) %in% rownames(abun_mat_filtered))
 df.reduced$pathways <- rownames(abun_mat_filtered)
 df.reduced$Level1 <- data.metageno$Level1[filtered_indices]
 df.reduced$Level2 <- data.metageno$Level2[filtered_indices]
 df.reduced$Level3 <- data.metageno$Level3[filtered_indices]
 
-# 新增三列丰度统计
+#  Add three columns
 df.reduced$Mean_Dark <- mean_dark[rownames(df.reduced)]
 df.reduced$Mean_IR <- mean_ir[rownames(df.reduced)]
 df.reduced$Mean_All <- mean_all[rownames(df.reduced)]
 df.reduced$Mean_Initial <- data.frame(abun_mat_filtered)$Initial
 df.reduced$Cluster <- paste('Cluster',df.reduced$Cluster)
-# 8. 可视化（CNS正刊风格美化，仿照Cell/Nature新细胞分型UMAP风格）
+# 8. Visualization
 
 library(ggtext)    # 富文本标题和图例
 library(showtext)  # 矢量字体
 showtext_auto()
 
-# 自定义正刊风格配色（Cluster分组，推荐5-8色，柔和但有区分度）
 cluster_colors <- c(
-  "#6A8DCD", # 柔和蓝
-  "#F17C67", # 柔和橙红
-  "#FFD491", # 柔和黄
-  "#A98BC5", # 柔和紫
-  "#6EC6CA", # 柔和蓝绿
-  "#F6A6B2", # 柔和粉
-  "#A3A7C2", # 柔和灰蓝
-  "#E6A0C4"  # 柔和粉紫
+  "#6A8DCD", 
+  "#F17C67", 
+  "#FFD491", 
+  "#A98BC5", 
+  "#6EC6CA", 
+  "#F6A6B2", 
+  "#A3A7C2", 
+  "#E6A0C4"  
 )
 n_clusters <- length(levels(df.reduced_all$Cluster))
 if (n_clusters > length(cluster_colors)) {
@@ -235,7 +226,6 @@ if (n_clusters > length(cluster_colors)) {
   cluster_colors <- cluster_colors[1:n_clusters]
 }
 
-# (1) Cluster分组上色（Cell/Nature风格，实心点，柔和配色，极简美化）
 p <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = Cluster)) +
   geom_point(size = 2.2, alpha = 0.85) +
   scale_color_manual(values = cluster_colors, name = "Cluster") +
@@ -262,13 +252,12 @@ p <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = Cluster)) +
 
 print(p)
 
-# (2) 丰度（Mean_Initial）上色，仿照Cell/Nature UMAP风格（实心点，连续色带，极简）
 df.reduced$log_Mean_Dark <- log10(df.reduced$Mean_Dark + 1)
 df.reduced$log_Mean_All <- log10(df.reduced$Mean_All + 1)
 df.reduced$log_Mean_IR <- log10(df.reduced$Mean_IR + 1)
 df.reduced$log_Mean_Initial <- log10(df.reduced$Mean_Initial + 1)
 
-# 自定义连续色带（正刊常用蓝-紫-橙色带，或viridis/cividis）
+
 abun_palette <- colorRampPalette(c('#FFFBEF', '#FFE79E', '#FF9800', "#E54091",  "#93206B" ))(100)
 
 p_abun <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_Initial)) +
@@ -299,7 +288,7 @@ p_abun <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_Initial)
 
 print(p_abun)
 
-# 9. 保存结果（将行名保存为'pathway'列）
+# 9. save data
 write.csv(df.reduced, "./ex-fig7/umap_kmeans_metageno.csv", row.names = FALSE)
 ggsave("./results_data/Fig3/umap_kmeans_metageno.pdf", p, width = 7, height = 6)
 
@@ -307,8 +296,6 @@ ggsave("./results_data/Fig3/umap_kmeans_metageno.pdf", p, width = 7, height = 6)
 # --- Method 2. Merge four figures ---
 library(ggpubr)
 
-# 分别为三种丰度绘制UMAP图，并将标题居中
-# 使用CNS期刊常用的Viridis配色方案，对比度更强
 p_dark <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_Dark)) +
   geom_point(size = 3, alpha = 0.9) +
   scale_color_viridis_c(option = "plasma", direction = -1, name = "log (RPKM)") +
@@ -318,7 +305,7 @@ p_dark <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_Dark)) +
     axis.text = element_text(size = 14),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
-    plot.title = element_text(hjust = 0.5, size = 16)  # 居中，不加粗
+    plot.title = element_text(hjust = 0.5, size = 16)  
   ) +
   labs(title = "Mean_Dark", color = "log")
 
@@ -331,7 +318,7 @@ p_ir <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_IR)) +
     axis.text = element_text(size = 14),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
-    plot.title = element_text(hjust = 0.5, size = 16)  # 居中，不加粗
+    plot.title = element_text(hjust = 0.5, size = 16)  
   ) +
   labs(title = "Mean_IR", color = "log")
 
@@ -344,7 +331,7 @@ p_all <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_All)) +
     axis.text = element_text(size = 14),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
-    plot.title = element_text(hjust = 0.5, size = 16)  # 居中，不加粗
+    plot.title = element_text(hjust = 0.5, size = 16)  
   ) +
   labs(title = "Mean_All", color = "log")
 
@@ -357,11 +344,10 @@ p_initial <- ggplot(df.reduced, aes(x = UMAP1, y = UMAP2, color = log_Mean_Initi
     axis.text = element_text(size = 14),
     legend.title = element_text(size = 14),
     legend.text = element_text(size = 12),
-    plot.title = element_text(hjust = 0.5, size = 16)  # 居中，不加粗
+    plot.title = element_text(hjust = 0.5, size = 16)  
   ) +
   labs(title = "Mean_Initial", color = "log")
 
-# 合并四图
 p_abun_combined <- ggarrange(
   p_initial, p_dark, p_ir, p_all, 
   ncol = 2, nrow = 2,

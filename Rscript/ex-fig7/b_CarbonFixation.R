@@ -12,7 +12,6 @@ path <- './data/ex-fig7/b_Carbon_Metabolism.xlsx'
 sheet.name <- 'IR'
 rawdata <- data.frame(read_excel(path, sheet = sheet.name))
 
-# 按 Function 汇总 Gene_Count 和 Total_reads（每行一个 Function，列为该 Function 的值之和）
 agg_by_function <- rawdata %>%
     group_by(Function) %>%
     summarise(

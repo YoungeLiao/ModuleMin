@@ -1,5 +1,5 @@
 rm(list=ls())
-# source('./Rscript/functions.R')
+
 # load library
 library(readxl)
 library(ggplot2)
@@ -31,13 +31,13 @@ print(group_stats)
 comparisons <- list(c("Dark", "IR"))
 result <- compare_means(CCUS ~ Group, data = data, method = "t.test")  
 title_name = '' # 'CO2 Capture Rate' # "Substrate Conversion"
-manual_fill_colar =  c('Dark'='#9499A6', 'IR'='#D75B66') # c("CO2-Dark" = "#818181", "CO2-IR" = "#E57272", "Yellow" = "#FAC026", "NH4-Dark" = "#EBF2EA", "NH4-IR" = "#C0334D", "Yellow-NC" = "#F3D4A0")
+manual_fill_colar =  c('Dark'='#989CC8', 'IR'='#E59693') # c("CO2-Dark" = "#818181", "CO2-IR" = "#E57272", "Yellow" = "#FAC026", "NH4-Dark" = "#EBF2EA", "NH4-IR" = "#C0334D", "Yellow-NC" = "#F3D4A0")
 
 # Create the violin plot
 ggplot(data, aes(x = Group, y = CCUS, fill = Group)) +
   geom_violin(trim = FALSE) +
   geom_boxplot(width = 0.1, fill = "white") +
-  geom_jitter(width = 0.2, size = 1.5, alpha = 0.7) +  # Scatter points
+  geom_jitter(width = 0.2, size = 2, alpha = 0.5) +  # Scatter points
   # stat_compare_means(method = "t.test", label = "p.signif", comparisons = comparisons) +  # Add significance values for specific comparisons
   scale_fill_manual(values = manual_fill_colar) +  # Custom fill colors from Set_Visualization
   labs(title = title_name,

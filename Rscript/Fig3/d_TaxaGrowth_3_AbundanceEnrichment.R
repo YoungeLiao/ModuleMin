@@ -9,7 +9,7 @@ library(ggpubr)
 
 
 # load data
-path <- './data/Fig3/d_Relative_abubdance.xlsx'
+path <- './data/Fig3/d_TaxaGrowth.xlsx'
 sheet.name <- 'plot_abundance' 
 growth <- data.frame(read_excel(path, sheet = sheet.name))
 
@@ -28,7 +28,7 @@ growth$Enrichment <- as.numeric(as.character(growth$Enrichment))
 growth$Group <- factor(growth$Group, levels = c("IR", "Dark"))
 
 # CNS-like colors
-main_colors <- c("IR" = "#E57272", "Dark" = "#818181")
+main_colors <- c("IR" = '#E59693', "Dark" = '#989CC8')
 
 library(dplyr)
 library(ggplot2)
@@ -105,17 +105,6 @@ growth <- growth %>%
   ) %>%
   ungroup() %>%
   select(-.mean_genus, -.sd_genus)
-
-# (可选) 若希望使用更健壮的标准化，替代 z-score 可用 median/MAD：
-# growth <- growth %>%
-#   group_by(Genus) %>%
-#   mutate(
-#     Enrichment_med = median(Enrichment, na.rm = TRUE),
-#     Enrichment_mad = mad(Enrichment, na.rm = TRUE),
-#     Enrichment_z = ifelse(Enrichment_mad > 0, (Enrichment - Enrichment_med) / Enrichment_mad, NA_real_)
-#   ) %>%
-#   ungroup() %>%
-#   select(-Enrichment_med, -Enrichment_mad)
 
 summary_z <- growth %>%
   group_by(Genus, Group) %>%

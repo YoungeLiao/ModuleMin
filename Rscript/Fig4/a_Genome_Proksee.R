@@ -48,26 +48,19 @@ head(rawdata.MAG)
 col.targeted <- c('KEGG_name', 'Location', 'Genome', 'Start', 'End', 'Strand', 'Gene.ID')
 col.name.targeted <- c('name', 'contig', 'type', 'start', 'stop', 'strand', 'legend')
 
-# 提取目标列
 data.MAG <- rawdata.MAG[col.targeted]
 
-# 处理Location列，移除_ORF...部分
 data.MAG$Location <- sub("_ORF.*", "", data.MAG$Location)
 
-# 重命名列
 names(data.MAG) <- col.name.targeted
 
-# 查看处理后的数据
 head(data.MAG)
 
-# 定义输出文件路径
 output.path <- paste('./data/Fig4/', MAG, '/anno_summary_', MAG, '_output.xlsx', sep = '')
 
-# 将过滤后的数据写入Excel文件
 library(writexl)
 write_xlsx(data.MAG, 
            path = output.path)
 
-# 保存为tsv格式
 output.path <- paste('./data/Fig4/', MAG, '/', MAG, '_processed.tsv', sep = '')
 write.table(data.MAG, file = output.path, sep = '\t', quote = FALSE, row.names = FALSE)
