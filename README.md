@@ -144,7 +144,7 @@ python scr/3.1\ FunTaxMerge.py
 
 If you use ModuleMin in your research, please cite the following literature:
 
-[Add relevant citation information here]
+*<u>Infrared sensing enhances inorganic carbon assimilation and retention in saline microbiomes</u>*
 
 ## License
 
